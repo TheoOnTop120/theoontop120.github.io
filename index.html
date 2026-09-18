@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mon Bilan Musical - Spotify Wrapped Permanent & Insights</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            spotify: {
+              green: '#1DB954',
+              darkGreen: '#1aa34a',
+              black: '#121212',
+              card: '#181818',
+              cardHover: '#282828',
+              subtext: '#b3b3b3'
+            }
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            display: ['"Bebas Neue"', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <style>
+    /* Custom Scrollbar & Glassmorphism Effects */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #121212;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #282828;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #1DB954;
+    }
+    .glass-panel {
+      background: rgba(24, 24, 24, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .spotify-glow {
+      box-shadow: 0 0 25px rgba(29, 185, 84, 0.25);
+    }
+    .spotify-glow-hover:hover {
+      box-shadow: 0 0 20px rgba(29, 185, 84, 0.4);
+    }
+    .gradient-text {
+      background: linear-gradient(135deg, #1DB954 0%, #1ed760 50%, #ffffff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  </style>
+</head>
+
+<body class="bg-[#121212] text-white font-sans antialiased min-h-screen flex flex-col selection:bg-spotify-green selection:text-black">
+
+  <!-- Top Banner / Demo Indicator -->
+  <div id="statusBanner" class="bg-gradient-to-r from-emerald-900/60 via-spotify-card to-emerald-900/60 border-b border-spotify-green/20 text-xs sm:text-sm py-2 px-4 flex justify-between items-center z-50">
+    <div class="flex items-center gap-2 max-w-4xl mx-auto w-full justify-between">
+      <span class="flex items-center gap-2">
+        <span id="statusIndicator" class="inline-block w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+        <span id="statusText" class="font-medium">Mode Démo actif (Données simulées riches)</span>
+      </span>
+      <div class="flex items-center gap-3">
+        <button onclick="toggleAuthModal()" class="hover:underline text-spotify-green font-semibold flex items-center gap-1.5 transition">
+          <i class="fa-brands fa-spotify text-base"></i>
+          <span id="authBtnLabel">Connecter mon Spotify</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header / Navigation -->
+  <header class="sticky top-0 z-40 glass-panel border-b border-white/5">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+      
+      <!-- Brand Logo -->
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-full bg-spotify-green/15 border border-spotify-green/40 flex items-center justify-center text-spotify-green text-2xl shadow-lg spotify-glow">
+          <i class="fa-brands fa-spotify"></i>
+        </div>
+        <div>
+          <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight flex items-center gap-2">
+            Mon Bilan <span class="text-spotify-green">Musical</span>
+          </h1>
+          <p class="text-xs text-spotify-subtext hidden sm:block">Spotify Wrapped Permanent & Statistiques en direct</p>
+        </div>
+      </div>
+
+      <!-- Time Range Selector -->
+      <div class="bg-[#181818] p-1 rounded-full border border-white/10 flex text-xs sm:text-sm font-medium">
+        <button onclick="setTimeRange('short_term')" id="btn-short_term" class="time-btn px-3 sm:px-4 py-1.5 rounded-full transition-all duration-200 bg-spotify-green text-black font-bold">
+          4 Semaines
+        </button>
+        <button onclick="setTimeRange('medium_term')" id="btn-medium_term" class="time-btn px-3 sm:px-4 py-1.5 rounded-full transition-all duration-200 text-spotify-subtext hover:text-white">
+          6 Mois
+        </button>
+        <button onclick="setTimeRange('long_term')" id="btn-long_term" class="time-btn px-3 sm:px-4 py-1.5 rounded-full transition-all duration-200 text-spotify-subtext hover:text-white">
+          Global
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Mobile / Desktop Main Navigation Tabs -->
+    <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-1 sm:space-x-4 border-t border-white/5 overflow-x-auto no-scrollbar">
+      <button onclick="switchTab('overview')" id="tab-overview" class="nav-tab py-3 px-4 text-sm font-semibold border-b-2 border-spotify-green text-spotify-green flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-chart-pie"></i> Vue d'ensemble
+      </button>
+      <button onclick="switchTab('artists')" id="tab-artists" class="nav-tab py-3 px-4 text-sm font-semibold border-b-2 border-transparent text-spotify-subtext hover:text-white flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-user-astronaut"></i> Top Artistes
+      </button>
+      <button onclick="switchTab('tracks')" id="tab-tracks" class="nav-tab py-3 px-4 text-sm font-semibold border-b-2 border-transparent text-spotify-subtext hover:text-white flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-music"></i> Top Morceaux
+      </button>
+      <button onclick="switchTab('audio')" id="tab-audio" class="nav-tab py-3 px-4 text-sm font-semibold border-b-2 border-transparent text-spotify-subtext hover:text-white flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-sliders"></i> Analyse Audio & Synesthésie
+      </button>
+      <button onclick="switchTab('festival')" id="tab-festival" class="nav-tab py-3 px-4 text-sm font-semibold border-b-2 border-transparent text-spotify-subtext hover:text-white flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-[#1DB954] fa-ticket"></i> Affiche de Festival
+      </button>
+    </nav>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- TAB 1: OVERVIEW -->
+    <section id="view-overview" class="tab-content space-y-8">
+      
+      <!-- Hero Archetype & Underground Card -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Musical Archetype Card -->
+        <div class="lg:col-span-2 glass-panel p-6 sm:p-8 rounded-3xl relative overflow-hidden border border-spotify-green/30 bg-gradient-to-br from-spotify-card via-[#1c221e] to-spotify-card shadow-2xl">
+          <div class="absolute -right-12 -top-12 w-64 h-64 bg-spotify-green/10 rounded-full blur-3xl pointer-events-none"></div>
+          
+          <div class="flex items-center gap-3 text-spotify-green text-xs font-extrabold uppercase tracking-widest mb-3">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Profil Musical Calculé
+          </div>
+          
+          <h2 id="archetypeTitle" class="text-2xl sm:text-4xl font-extrabold text-white mb-3">
+            L'Explorateur Alternative & Electro High-BPM
+          </h2>
+          <p id="archetypeDesc" class="text-sm sm:text-base text-spotify-subtext leading-relaxed mb-6">
+            Vous aimez les rythmes entraînants et les mélodies sophistiquées. Votre bibliothèque combine un goût marqué pour l'électronique alternative avec des refrains intenses et immersifs.
+          </p>
+
+          <!-- Top Genres Badges -->
+          <div>
+            <span class="text-xs text-spotify-subtext block mb-2 font-medium">Genres Dominants :</span>
+            <div id="topGenresBadges" class="flex flex-wrap gap-2">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Underground Score Gauge -->
+        <div class="glass-panel p-6 sm:p-8 rounded-3xl flex flex-col justify-between border border-white/10 relative">
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="text-xs text-spotify-subtext uppercase tracking-widest font-extrabold">Indice Underground</span>
+              <h3 class="text-xl font-bold mt-1 text-white">Obscurité vs Pop</h3>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-spotify-green">
+              <i class="fa-solid fa-compass text-lg"></i>
+            </div>
+          </div>
+
+          <div class="my-6 text-center">
+            <div class="relative inline-flex items-center justify-center">
+              <span id="undergroundScore" class="text-5xl font-extrabold text-white">74<span class="text-2xl text-spotify-green">%</span></span>
+            </div>
+            <p id="undergroundLabel" class="text-sm font-semibold text-spotify-green mt-2">Pépite Hunter & Électlectique</p>
+            <p class="text-xs text-spotify-subtext mt-1">
+              Basé sur la popularité moyenne de vos artistes.
+            </p>
+          </div>
+
+          <!-- Progress Bar -->
+          <div>
+            <div class="flex justify-between text-xs text-spotify-subtext mb-1">
+              <span>Mainstream (0%)</span>
+              <span>Niche (100%)</span>
+            </div>
+            <div class="w-full bg-white/10 rounded-full h-3 overflow-hidden p-0.5 border border-white/5">
+              <div id="undergroundBar" class="bg-gradient-to-r from-emerald-500 to-spotify-green h-full rounded-full transition-all duration-1000" style="width: 74%;"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Quick Highlights Grid: Top 3 Artists & Top 3 Tracks -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        
+        <!-- Top 3 Artistes Preview -->
+        <div class="glass-panel p-6 rounded-3xl space-y-4">
+          <div class="flex justify-between items-center mb-2">
+            <h3 class="text-lg font-bold flex items-center gap-2">
+              <i class="fa-solid fa-crown text-amber-400"></i> Top Artistes
+            </h3>
+            <button onclick="switchTab('artists')" class="text-xs text-spotify-green hover:underline font-semibold">
+              Voir les 20 <i class="fa-solid fa-chevron-right ml-1"></i>
+            </button>
+          </div>
+          <div id="overviewArtistsList" class="space-y-3">
+            <!-- Rendered JS -->
+          </div>
+        </div>
+
+        <!-- Top 3 Morceaux Preview -->
+        <div class="glass-panel p-6 rounded-3xl space-y-4">
+          <div class="flex justify-between items-center mb-2">
+            <h3 class="text-lg font-bold flex items-center gap-2">
+              <i class="fa-solid fa-compact-disc text-spotify-green"></i> Morceaux les plus écoutés
+            </h3>
+            <button onclick="switchTab('tracks')" class="text-xs text-spotify-green hover:underline font-semibold">
+              Voir les 20 <i class="fa-solid fa-chevron-right ml-1"></i>
+            </button>
+          </div>
+          <div id="overviewTracksList" class="space-y-3">
+            <!-- Rendered JS -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Quick Synesthesia Teaser -->
+      <div class="glass-panel p-6 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-6 border border-white/10">
+        <div class="space-y-2 text-center md:text-left">
+          <span class="text-xs text-spotify-green font-bold uppercase tracking-wider">Aura Visuelle & Couleurs</span>
+          <h3 class="text-xl font-bold">Votre Palette Synesthésique</h3>
+          <p class="text-xs text-spotify-subtext max-w-xl">
+            Extraction des nuances chromatiques dominantes issues des pochettes d'albums qui façonnent votre univers musical.
+          </p>
+        </div>
+        <div id="paletteMiniPreview" class="flex gap-2">
+          <!-- Palette Swatches Rendered JS -->
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- TAB 2: TOP ARTISTS -->
+    <section id="view-artists" class="tab-content hidden space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-white">Vos Artistes Incontournables</h2>
+          <p class="text-xs sm:text-sm text-spotify-subtext">Classement des artistes que vous écoutez en boucle</p>
+        </div>
+        <input type="text" id="artistSearch" oninput="filterArtists()" placeholder="Filtrer un artiste ou genre..." class="bg-[#181818] border border-white/10 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-spotify-green w-full sm:w-64">
+      </div>
+
+      <div id="artistsFullGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 sm:gap-6 gap-4">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+
+    <!-- TAB 3: TOP TRACKS -->
+    <section id="view-tracks" class="tab-content hidden space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-white">Morceaux dans votre Tête</h2>
+          <p class="text-xs sm:text-sm text-spotify-subtext">Vos 20 titres les plus diffusés avec extrait audio</p>
+        </div>
+        <div class="text-xs text-spotify-subtext flex items-center gap-2">
+          <i class="fa-solid fa-circle-info text-spotify-green"></i>
+          <span>Cliquez sur un titre pour écouter un extrait</span>
+        </div>
+      </div>
+
+      <div id="tracksFullList" class="space-y-2">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+
+    <!-- TAB 4: AUDIO ANALYSIS & PALETTE -->
+    <section id="view-audio" class="tab-content hidden space-y-8">
+      <div>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-white">Analyse Acoustique & Synesthésie</h2>
+        <p class="text-xs sm:text-sm text-spotify-subtext">Décomposition technique des caractéristiques de vos écoutes</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        <!-- Audio Radar Chart -->
+        <div class="glass-panel p-6 rounded-3xl space-y-4">
+          <h3 class="text-lg font-bold flex items-center gap-2 text-white">
+            <i class="fa-solid fa-chart-radar text-spotify-green"></i> Empreinte Audio (Radar)
+          </h3>
+          <p class="text-xs text-spotify-subtext">
+            Indicateurs calculés d'après les métriques Spotify (Énergie, Positivité, Dancabilité, etc.)
+          </p>
+          <div class="relative w-full h-72 sm:h-80 flex items-center justify-center">
+            <canvas id="radarChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Tempo / BPM Chart -->
+        <div class="glass-panel p-6 rounded-3xl space-y-4">
+          <h3 class="text-lg font-bold flex items-center gap-2 text-white">
+            <i class="fa-solid fa-drum text-spotify-green"></i> Répartition du Tempo (BPM)
+          </h3>
+          <p class="text-xs text-spotify-subtext">
+            Distribution des battements par minute de vos titres favoris
+          </p>
+          <div class="relative w-full h-72 sm:h-80 flex items-center justify-center">
+            <canvas id="tempoChart"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Synesthesia Palette Detailed Section -->
+      <div class="glass-panel p-6 sm:p-8 rounded-3xl space-y-6">
+        <div>
+          <span class="text-xs font-bold text-spotify-green uppercase tracking-widest">Aura Chromatique</span>
+          <h3 class="text-xl sm:text-2xl font-extrabold text-white mt-1">Palette Synesthésique Complète</h3>
+          <p class="text-xs sm:text-sm text-spotify-subtext mt-1">
+            Chaque teinte représente la couleur dominante d'un de vos albums les plus écoutés ce trimestre.
+          </p>
+        </div>
+
+        <div id="paletteFullGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+    </section>
+
+
+    <!-- TAB 5: FESTIVAL POSTER GENERATOR -->
+    <section id="view-festival" class="tab-content hidden space-y-8">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-white">Générateur d'Affiche de Festival</h2>
+          <p class="text-xs sm:text-sm text-spotify-subtext">Transformez votre top artistes en un lineup de festival personnalisé</p>
+        </div>
+        <button onclick="downloadPoster()" class="bg-spotify-green hover:bg-spotify-darkGreen text-black font-extrabold px-6 py-3 rounded-full transition shadow-lg spotify-glow flex items-center gap-2 self-start md:self-auto">
+          <i class="fa-solid fa-download"></i> Télécharger l'Affiche (PNG)
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <!-- Controls Panel -->
+        <div class="lg:col-span-4 glass-panel p-6 rounded-3xl space-y-6">
+          <h3 class="text-lg font-bold border-b border-white/10 pb-3">Personnalisation</h3>
+
+          <!-- Festival Name Input -->
+          <div>
+            <label class="block text-xs font-semibold text-spotify-subtext mb-2">Nom du Festival</label>
+            <input type="text" id="posterNameInput" value="SUPERSONIC FESTIVAL 2026" oninput="renderFestivalPoster()" class="w-full bg-[#181818] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-spotify-green">
+          </div>
+
+          <!-- Festival Style Selector -->
+          <div>
+            <label class="block text-xs font-semibold text-spotify-subtext mb-2">Thème Graphique</label>
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="setPosterTheme('cyberpunk')" id="theme-cyberpunk" class="theme-btn border-2 border-spotify-green bg-spotify-green/10 text-white p-3 rounded-xl text-xs font-bold flex flex-col items-center gap-1">
+                <i class="fa-solid fa-bolt text-lg text-cyan-400"></i> Cyberpunk Neon
+              </button>
+              <button onclick="setPosterTheme('retro')" id="theme-retro" class="theme-btn border border-white/10 bg-[#181818] text-spotify-subtext p-3 rounded-xl text-xs font-bold flex flex-col items-center gap-1">
+                <i class="fa-solid fa-sun text-lg text-amber-400"></i> Sunset Retro
+              </button>
+              <button onclick="setPosterTheme('minimal')" id="theme-minimal" class="theme-btn border border-white/10 bg-[#181818] text-spotify-subtext p-3 rounded-xl text-xs font-bold flex flex-col items-center gap-1">
+                <i class="fa-solid fa-square-minus text-lg text-gray-300"></i> Dark Minimalist
+              </button>
+              <button onclick="setPosterTheme('golden')" id="theme-golden" class="theme-btn border border-white/10 bg-[#181818] text-spotify-subtext p-3 rounded-xl text-xs font-bold flex flex-col items-center gap-1">
+                <i class="fa-solid fa-sparkles text-lg text-yellow-400"></i> Golden Hour
+              </button>
+            </div>
+          </div>
+
+          <!-- Date & Location Input -->
+          <div>
+            <label class="block text-xs font-semibold text-spotify-subtext mb-2">Date & Lieu</label>
+            <input type="text" id="posterDateInput" value="24 - 26 JUILLET 2026 • PARC MUSICAL" oninput="renderFestivalPoster()" class="w-full bg-[#181818] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-spotify-green">
+          </div>
+
+          <div class="bg-white/5 p-4 rounded-xl text-xs text-spotify-subtext space-y-2">
+            <p class="font-semibold text-white flex items-center gap-1.5">
+              <i class="fa-solid fa-wand-magic"></i> Astuce
+            </p>
+            <p>
+              Le lineup est automatiquement réparti sur 3 jours selon l'ordre exact de vos artistes les plus écoutés.
+            </p>
+          </div>
+        </div>
+
+        <!-- Canvas Display Area -->
+        <div class="lg:col-span-8 flex justify-center glass-panel p-4 sm:p-8 rounded-3xl border border-white/10">
+          <div class="w-full max-w-lg shadow-2xl rounded-2xl overflow-hidden border border-white/10">
+            <canvas id="posterCanvas" width="800" height="1100" class="w-full h-auto block bg-black"></canvas>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+
+  <!-- SPOTIFY AUTH MODAL -->
+  <div id="authModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="glass-panel max-w-lg w-full rounded-3xl p-6 sm:p-8 border border-spotify-green/30 relative space-y-6 shadow-2xl">
+      
+      <button onclick="toggleAuthModal()" class="absolute top-5 right-5 text-spotify-subtext hover:text-white text-xl">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-full bg-spotify-green/20 text-spotify-green flex items-center justify-center text-2xl">
+          <i class="fa-brands fa-spotify"></i>
+        </div>
+        <div>
+          <h3 class="text-xl font-bold text-white">Connexion Spotify En Direct</h3>
+          <p class="text-xs text-spotify-subtext">OAuth 2.0 PKCE Sécurisé (Sans serveur distant)</p>
+        </div>
+      </div>
+
+      <!-- Mode Switch / Instructions -->
+      <div class="space-y-4">
+        
+        <div class="bg-white/5 p-4 rounded-2xl space-y-2 text-xs text-spotify-subtext border border-white/5">
+          <p class="font-bold text-white text-sm flex items-center gap-1.5">
+            <i class="fa-solid fa-key text-spotify-green"></i> Comment obtenir un Client ID gratuit ?
+          </p>
+          <ol class="list-decimal list-inside space-y-1.5 pl-1">
+            <li>Allez sur <a href="https://developer.spotify.com/dashboard" target="_blank" class="text-spotify-green underline font-semibold">dashboard.spotify.com</a> et connectez-vous.</li>
+            <li>Cliquez sur <strong>"Create App"</strong>, donnez un nom (ex: Mon Bilan).</li>
+            <li>Dans les paramètres, ajoutez cette <strong>Redirect URI</strong> exacte :</li>
+          </ol>
+
+          <!-- Copyable Redirect URI Box -->
+          <div class="flex items-center gap-2 bg-black/60 p-2 rounded-lg border border-white/10 mt-2">
+            <input type="text" id="redirectUriBox" readonly class="bg-transparent text-xs text-spotify-green font-mono flex-grow focus:outline-none">
+            <button onclick="copyRedirectUri()" class="bg-spotify-green/20 hover:bg-spotify-green/30 text-spotify-green text-xs px-2.5 py-1 rounded font-semibold transition">
+              Copier
+            </button>
+          </div>
+        </div>
+
+        <!-- Client ID Input -->
+        <div>
+          <label class="block text-xs font-semibold text-spotify-subtext mb-1.5">Votre Spotify Client ID</label>
+          <input type="text" id="spotifyClientIdInput" placeholder="ex: 3a1b2c3d4e5f6g7h8i9j..." class="w-full bg-[#181818] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-spotify-green font-mono">
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="space-y-3 pt-2">
+          <button onclick="startSpotifyLogin()" class="w-full bg-spotify-green hover:bg-spotify-darkGreen text-black font-extrabold py-3.5 rounded-full transition shadow-lg spotify-glow flex items-center justify-center gap-2">
+            <i class="fa-brands fa-spotify text-lg"></i>
+            Se connecter avec Spotify
+          </button>
+
+          <button onclick="switchToDemoMode()" class="w-full bg-white/5 hover:bg-white/10 text-white font-semibold py-3 rounded-full transition text-xs border border-white/10">
+            Rester en Mode Démo Exemple
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- Audio Preview Floating Bar -->
+  <div id="audioPlayerWidget" class="fixed bottom-4 left-1/2 -translate-x-1/2 max-w-md w-full px-4 z-40 hidden">
+    <div class="glass-panel p-3 rounded-2xl border border-spotify-green/40 shadow-2xl flex items-center justify-between gap-3 bg-[#181818]/90">
+      <img id="playerCover" src="" class="w-10 h-10 rounded-lg object-cover">
+      <div class="flex-grow min-w-0">
+        <p id="playerTitle" class="text-xs font-bold text-white truncate">Titre</p>
+        <p id="playerArtist" class="text-[10px] text-spotify-subtext truncate">Artiste</p>
+      </div>
+      <button onclick="toggleGlobalAudio()" id="playerPlayBtn" class="w-9 h-9 rounded-full bg-spotify-green text-black flex items-center justify-center font-bold text-sm">
+        <i class="fa-solid fa-pause"></i>
+      </button>
+    </div>
+  </div>
+
+
+  <script>
+    // --- Application State ---
+    const state = {
+      mode: 'demo', // 'demo' or 'spotify'
+      timeRange: 'short_term', // 'short_term', 'medium_term', 'long_term'
+      activeTab: 'overview',
+      posterTheme: 'cyberpunk',
+      audioPlayingTrackId: null,
+      audioElement: new Audio(),
+      spotifyToken: null,
+      clientId: localStorage.getItem('spotify_client_id') || '',
+      data: {}
+    };
+
+    // --- Rich Mock Data for Demo Mode ---
+    const MOCK_DATA = {
+      short_term: {
+        archetype: "L'Explorateur Alternative & Electro High-BPM",
+        archetypeDesc: "Vous êtes actuellement dans une phase d'exploration intense mélant synthwave futuriste, indie pop anglo-saxonne et beats électro percutants. Votre rythme de vie musical est rapide et immersif.",
+        undergroundScore: 78, // % Underground
+        genres: ["Indie Electronica", "Synthwave", "French Touch", "Alternative Dance", "Art Pop"],
+        radarStats: { energy: 85, valence: 62, danceability: 78, acousticness: 25, speechiness: 15, liveness: 40 },
+        tempoDistribution: [10, 25, 45, 15, 5], // 80-100, 100-120, 120-140, 140-160, 160+
+        palette: [
+          { hex: "#1DB954", label: "Spotify Neon Green", album: "Electric Dreams" },
+          { hex: "#7B2CBF", label: "Cyber Violet", album: "Night Call" },
+          { hex: "#FF007A", label: "Synth Pink", album: "Hyper Light" },
+          { hex: "#00F0FF", label: "Laser Cyan", album: "Metropolis" },
+          { hex: "#FF9E00", label: "Sunset Gold", album: "Horizon" },
+          { hex: "#121212", label: "Deep Obsidian", album: "Midnight Studio" }
+        ],
+        artists: [
+          { name: "Justice", genres: ["French Touch", "Electro House"], popularity: 68, image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&auto=format&fit=crop&q=80", rankChange: "+2" },
+          { name: "The XX", genres: ["Indie Pop", "Minimal"], popularity: 74, image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&auto=format&fit=crop&q=80", rankChange: "0" },
+          { name: "Kavinsky", genres: ["Synthwave", "Electro"], popularity: 65, image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&auto=format&fit=crop&q=80", rankChange: "+5" },
+          { name: "Daft Punk", genres: ["Disco", "French Touch"], popularity: 88, image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&auto=format&fit=crop&q=80", rankChange: "-1" },
+          { name: "Phoenix", genres: ["Indie Rock", "Synth Pop"], popularity: 70, image: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=400&auto=format&fit=crop&q=80", rankChange: "+1" },
+          { name: "L'Impératrice", genres: ["Nu-Disco", "French Pop"], popularity: 62, image: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=400&auto=format&fit=crop&q=80", rankChange: "+4" },
+          { name: "Gesaffelstein", genres: ["Dark Techno", "EBM"], popularity: 60, image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400&auto=format&fit=crop&q=80", rankChange: "0" },
+          { name: "Gorillaz", genres: ["Alternative", "Trip Hop"], popularity: 82, image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=400&auto=format&fit=crop&q=80", rankChange: "-2" },
+          { name: "Parov Stelar", genres: ["Electro Swing"], popularity: 64, image: "https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=400&auto=format&fit=crop&q=80", rankChange: "+3" },
+          { name: "M83", genres: ["Shoegaze", "Ambient Pop"], popularity: 72, image: "https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=400&auto=format&fit=crop&q=80", rankChange: "0" }
+        ],
+        tracks: [
+          { id: "t1", title: "Generator", artist: "Justice", album: "Hyperdrama", duration: "4:42", bpm: 128, cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200&auto=format&fit=crop&q=80", previewUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
+          { id: "t2", title: "Nightcall", artist: "Kavinsky", album: "OutRun", duration: "4:19", bpm: 118, cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200&auto=format&fit=crop&q=80", previewUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
+          { id: "t3", title: "Intro", artist: "The XX", album: "xx", duration: "2:08", bpm: 100, cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=200&auto=format&fit=crop&q=80", previewUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" },
+          { id: "t4", title: "Digital Love", artist: "Daft Punk", album: "Discovery", duration: "4:58", bpm: 125, cover: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&auto=format&fit=crop&q=80", previewUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3" },
+          { id: "t5", title: "Anomalie Bleue", artist: "L'Impératrice", album: "Tako Tsubo", duration: "3:40", bpm: 115, cover: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=200&auto=format&fit=crop&q=80", previewUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3" }
+        ]
+      },
+      medium_term: {
+        archetype: "Le Melancolique Night-Drive & Indie Folk",
+        archetypeDesc: "Sur les 6 derniers mois, votre univers penchait vers des sonorités introspectives, des guitares acoustiques chaleureuses et des voix enveloppantes parfaites pour les trajets nocturnes.",
+        undergroundScore: 62,
+        genres: ["Indie Folk", "Chanson Alternative", "Lo-Fi Beats", "Post-Rock", "Ambient"],
+        radarStats: { energy: 45, valence: 38, danceability: 52, acousticness: 72, speechiness: 12, liveness: 22 },
+        tempoDistribution: [20, 40, 25, 10, 5],
+        palette: [
+          { hex: "#D97706", label: "Amber Sunset", album: "Folklore" },
+          { hex: "#4B5563", label: "Muted Fog", album: "High Violet" },
+          { hex: "#1E3A8A", label: "Night Blue", album: "Carrie & Lowell" },
+          { hex: "#065F46", label: "Forest Green", album: "Bon Iver" },
+          { hex: "#9D174D", label: "Dusty Rose", album: "Melodrama" }
+        ],
+        artists: [
+          { name: "Bon Iver", genres: ["Indie Folk", "Art Pop"], popularity: 75, image: "https://images.unsplash.com/photo-1483412033650-1015ddeb83d1?w=400&auto=format&fit=crop&q=80", rankChange: "0" },
+          { name: "Phoebe Bridgers", genres: ["Indie Rock", "Sadcore"], popularity: 73, image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400&auto=format&fit=crop&q=80", rankChange: "+2" },
+          { name: "Sufjan Stevens", genres: ["Baroque Pop", "Folk"], popularity: 69, image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&auto=format&fit=crop&q=80", rankChange: "+1" },
+          { name: "The National", genres: ["Indie Rock"], popularity: 68, image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&auto=format&fit=crop&q=80", rankChange: "-1" },
+          { name: "Ben Howard", genres: ["British Folk"], popularity: 64, image: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=400&auto=format&fit=crop&q=80", rankChange: "0" }
+        ],
+        tracks: [
+          { id: "tm1", title: "Holocene", artist: "Bon Iver", album: "Bon Iver", duration: "5:36", bpm: 74, cover: "https://images.unsplash.com/photo-1483412033650-1015ddeb83d1?w=200&auto=format&fit=crop&q=80", previewUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3" },
+          { id: "tm2", title: "Motion Sickness", artist: "Phoebe Bridgers", album: "Stranger in the Alps", duration: "3:49", bpm: 104, cover: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=200&auto=format&fit=crop&q=80", previewUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3" }
+        ]
+      },
+      long_term: {
+        archetype: "Le Visionnaire Pop & Classic Rock",
+        archetypeDesc: "Votre bilan historique rassemble les piliers intemporels de la musique moderne. Des légendes du rock aux géants de la pop mondiale.",
+        undergroundScore: 35,
+        genres: ["Classic Rock", "Synth Pop", "Alternative Rock", "Modern Pop", "Funk"],
+        radarStats: { energy: 78, valence: 70, danceability: 68, acousticness: 30, speechiness: 10, liveness: 35 },
+        tempoDistribution: [15, 30, 35, 15, 5],
+        palette: [
+          { hex: "#EF4444", label: "Classic Crimson", album: "Abbey Road" },
+          { hex: "#F59E0B", label: "Golden Retro", album: "Dark Side" },
+          { hex: "#3B82F6", label: "Electric Blue", album: "Heroes" },
+          { hex: "#8B5CF6", label: "Royal Purple", album: "Purple Rain" }
+        ],
+        artists: [
+          { name: "David Bowie", genres: ["Art Rock", "Glam Rock"], popularity: 82, image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=400&auto=format&fit=crop&q=80", rankChange: "0" },
+          { name: "Fleetwood Mac", genres: ["Classic Rock", "Pop Rock"], popularity: 86, image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&auto=format&fit=crop&q=80", rankChange: "+1" },
+          { name: "Pink Floyd", genres: ["Progressive Rock"], popularity: 84, image: "https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=400&auto=format&fit=crop&q=80", rankChange: "-1" },
+          { name: "Tame Impala", genres: ["Psychedelic Pop"], popularity: 81, image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&auto=format&fit=crop&q=80", rankChange: "0" }
+        ],
+        tracks: [
+          { id: "tl1", title: "Heroes", artist: "David Bowie", album: "Heroes", duration: "6:11", bpm: 112, cover: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=200&auto=format&fit=crop&q=80", previewUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3" },
+          { id: "tl2", title: "Dreams", artist: "Fleetwood Mac", album: "Rumours", duration: "4:17", bpm: 120, cover: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&auto=format&fit=crop&q=80", previewUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3" }
+        ]
+      }
+    };
+
+    let radarChartInstance = null;
+    let tempoChartInstance = null;
+
+    // --- Page Load Handler ---
+    window.onload = function() {
+      // Check redirect URL for Spotify OAuth Code return
+      handleSpotifyCallback();
+
+      // Initialize UI with Current Mode & Data
+      document.getElementById('redirectUriBox').value = window.location.origin + window.location.pathname;
+      refreshUI();
+    };
+
+    // --- Navigation & Tabs Switching ---
+    function switchTab(tabId) {
+      state.activeTab = tabId;
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.nav-tab').forEach(el => {
+        el.classList.remove('border-spotify-green', 'text-spotify-green');
+        el.classList.add('border-transparent', 'text-spotify-subtext');
+      });
+
+      const activeView = document.getElementById(`view-${tabId}`);
+      if (activeView) activeView.classList.remove('hidden');
+
+      const activeNav = document.getElementById(`tab-${tabId}`);
+      if (activeNav) {
+        activeNav.classList.remove('border-transparent', 'text-spotify-subtext');
+        activeNav.classList.add('border-spotify-green', 'text-spotify-green');
+      }
+
+      // Re-render canvas or charts if switching to those tabs
+      if (tabId === 'audio') {
+        renderCharts();
+      } else if (tabId === 'festival') {
+        renderFestivalPoster();
+      }
+    }
+
+    // --- Time Range Selector ---
+    function setTimeRange(range) {
+      state.timeRange = range;
+      document.querySelectorAll('.time-btn').forEach(btn => {
+        btn.classList.remove('bg-spotify-green', 'text-black', 'font-bold');
+        btn.classList.add('text-spotify-subtext');
+      });
+
+      const activeBtn = document.getElementById(`btn-${range}`);
+      if (activeBtn) {
+        activeBtn.classList.remove('text-spotify-subtext');
+        activeBtn.classList.add('bg-spotify-green', 'text-black', 'font-bold');
+      }
+
+      if (state.mode === 'spotify' && state.spotifyToken) {
+        fetchSpotifyData();
+      } else {
+        refreshUI();
+      }
+    }
+
+    // --- Main UI Refresher ---
+    function refreshUI() {
+      const currentData = state.mode === 'demo' ? MOCK_DATA[state.timeRange] : (state.data[state.timeRange] || MOCK_DATA[state.timeRange]);
+
+      // 1. Archetype & Score
+      document.getElementById('archetypeTitle').innerText = currentData.archetype;
+      document.getElementById('archetypeDesc').innerText = currentData.archetypeDesc;
+      document.getElementById('undergroundScore').innerHTML = `${currentData.undergroundScore}<span class="text-2xl text-spotify-green">%</span>`;
+      document.getElementById('undergroundBar').style.width = `${currentData.undergroundScore}%`;
+
+      // Label calculation
+      let scoreLabel = "Mainstream Enthusiast";
+      if (currentData.undergroundScore > 75) scoreLabel = "Pépite Hunter & Underground Niche";
+      else if (currentData.undergroundScore > 50) scoreLabel = "Équilibre Indie-Pop & Alternatif";
+      document.getElementById('undergroundLabel').innerText = scoreLabel;
+
+      // Top Genres Badges
+      const genresContainer = document.getElementById('topGenresBadges');
+      genresContainer.innerHTML = currentData.genres.map(g => 
+        `<span class="bg-white/10 hover:bg-spotify-green hover:text-black text-white text-xs px-3 py-1 rounded-full font-semibold transition">${g}</span>`
+      ).join('');
+
+      // 2. Overview Previews
+      renderOverviewLists(currentData);
+
+      // 3. Top Artists Full Grid
+      renderFullArtistsGrid(currentData.artists);
+
+      // 4. Top Tracks Full List
+      renderFullTracksList(currentData.tracks);
+
+      // 5. Palette Synesthésique
+      renderPalette(currentData.palette);
+
+      // 6. Charts & Poster Canvas if visible
+      if (state.activeTab === 'audio') renderCharts();
+      if (state.activeTab === 'festival') renderFestivalPoster();
+    }
+
+    function renderOverviewLists(data) {
+      // Top 3 Artists
+      const overviewArtists = document.getElementById('overviewArtistsList');
+      overviewArtists.innerHTML = data.artists.slice(0, 3).map((artist, idx) => `
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition">
+          <div class="flex items-center gap-3">
+            <span class="text-sm font-extrabold w-5 text-spotify-subtext">#${idx + 1}</span>
+            <img src="${artist.image}" class="w-10 h-10 rounded-full object-cover shadow">
+            <div>
+              <p class="text-sm font-bold text-white">${artist.name}</p>
+              <p class="text-[11px] text-spotify-subtext">${artist.genres[0] || 'Artiste'}</p>
+            </div>
+          </div>
+          <span class="text-xs text-spotify-green bg-spotify-green/10 px-2 py-0.5 rounded font-bold">${artist.rankChange || '0'}</span>
+        </div>
+      `).join('');
+
+      // Top 3 Tracks
+      const overviewTracks = document.getElementById('overviewTracksList');
+      overviewTracks.innerHTML = data.tracks.slice(0, 3).map((track, idx) => `
+        <div onclick="playPreview('${track.id}', '${track.previewUrl}', '${track.title}', '${track.artist}', '${track.cover}')" class="flex items-center justify-between p-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition cursor-pointer group">
+          <div class="flex items-center gap-3">
+            <span class="text-sm font-extrabold w-5 text-spotify-subtext">#${idx + 1}</span>
+            <div class="relative">
+              <img src="${track.cover}" class="w-10 h-10 rounded-lg object-cover shadow">
+              <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition rounded-lg text-spotify-green">
+                <i class="fa-solid fa-play text-xs"></i>
+              </div>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-white truncate max-w-[140px] sm:max-w-xs">${track.title}</p>
+              <p class="text-[11px] text-spotify-subtext">${track.artist}</p>
+            </div>
+          </div>
+          <span class="text-xs text-spotify-subtext font-mono">${track.duration}</span>
+        </div>
+      `).join('');
+
+      // Mini Palette Preview
+      const miniPalette = document.getElementById('paletteMiniPreview');
+      miniPalette.innerHTML = data.palette.slice(0, 5).map(p => `
+        <div class="w-8 h-8 rounded-full border border-white/20 shadow-md transform hover:scale-110 transition" style="background-color: ${p.hex}" title="${p.label}"></div>
+      `).join('');
+    }
+
+    function renderFullArtistsGrid(artists) {
+      const grid = document.getElementById('artistsFullGrid');
+      grid.innerHTML = artists.map((artist, idx) => `
+        <div class="glass-panel p-4 rounded-2xl flex flex-col items-center text-center hover:bg-spotify-cardHover transition border border-white/5 group">
+          <div class="relative mb-3">
+            <img src="${artist.image}" class="w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover shadow-lg group-hover:scale-105 transition duration-300">
+            <span class="absolute top-0 left-0 bg-spotify-green text-black font-extrabold text-xs px-2.5 py-1 rounded-full shadow">
+              #${idx + 1}
+            </span>
+          </div>
+          <h4 class="text-base font-bold text-white mb-1 truncate w-full">${artist.name}</h4>
+          <p class="text-xs text-spotify-subtext mb-3 truncate w-full">${artist.genres.slice(0, 2).join(', ') || 'Musique'}</p>
+          
+          <div class="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
+            <div class="bg-spotify-green h-full rounded-full" style="width: ${artist.popularity}%"></div>
+          </div>
+          <span class="text-[10px] text-spotify-subtext mt-1">Popularité : ${artist.popularity}/100</span>
+        </div>
+      `).join('');
+    }
+
+    function renderFullTracksList(tracks) {
+      const container = document.getElementById('tracksFullList');
+      container.innerHTML = tracks.map((track, idx) => `
+        <div onclick="playPreview('${track.id}', '${track.previewUrl}', '${track.title}', '${track.artist}', '${track.cover}')" class="glass-panel p-3 sm:p-4 rounded-2xl flex items-center justify-between gap-4 hover:bg-spotify-cardHover transition cursor-pointer border border-white/5 group">
+          <div class="flex items-center gap-3 sm:gap-4 min-w-0">
+            <span class="text-sm font-extrabold text-spotify-subtext w-6 text-center">#${idx + 1}</span>
+            <div class="relative flex-shrink-0">
+              <img src="${track.cover}" class="w-12 h-12 rounded-xl object-cover shadow">
+              <div class="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition rounded-xl text-spotify-green text-base">
+                <i class="fa-solid fa-play"></i>
+              </div>
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm sm:text-base font-bold text-white truncate">${track.title}</p>
+              <p class="text-xs text-spotify-subtext truncate">${track.artist} • <span class="text-gray-400">${track.album}</span></p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-4 flex-shrink-0">
+            <span class="hidden sm:inline-block bg-white/5 text-spotify-subtext text-xs px-2.5 py-1 rounded-full font-mono">
+              ${track.bpm} BPM
+            </span>
+            <span class="text-xs font-mono text-spotify-subtext">${track.duration}</span>
+            <button class="w-8 h-8 rounded-full bg-white/5 group-hover:bg-spotify-green group-hover:text-black flex items-center justify-center text-spotify-subtext transition">
+              <i class="fa-solid fa-headphones text-xs"></i>
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderPalette(palette) {
+      const grid = document.getElementById('paletteFullGrid');
+      grid.innerHTML = palette.map(p => `
+        <div class="glass-panel p-3 rounded-2xl flex flex-col items-center text-center space-y-2 border border-white/5">
+          <div class="w-full h-16 rounded-xl shadow-inner border border-white/10" style="background-color: ${p.hex}"></div>
+          <p class="text-xs font-bold text-white truncate w-full">${p.label}</p>
+          <p class="text-[10px] text-spotify-subtext font-mono">${p.hex}</p>
+        </div>
+      `).join('');
+    }
+
+    // --- Audio Preview Player ---
+    function playPreview(id, url, title, artist, cover) {
+      const widget = document.getElementById('audioPlayerWidget');
+      const titleEl = document.getElementById('playerTitle');
+      const artistEl = document.getElementById('playerArtist');
+      const coverEl = document.getElementById('playerCover');
+      const playBtn = document.getElementById('playerPlayBtn');
+
+      if (!url) {
+        alert("Aucun extrait audio disponible pour ce morceau.");
+        return;
+      }
+
+      if (state.audioPlayingTrackId === id && !state.audioElement.paused) {
+        state.audioElement.pause();
+        playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+        return;
+      }
+
+      state.audioPlayingTrackId = id;
+      state.audioElement.src = url;
+      state.audioElement.play().catch(e => console.log('Audio playback blocked'));
+
+      titleEl.innerText = title;
+      artistEl.innerText = artist;
+      coverEl.src = cover;
+      playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+      widget.classList.remove('hidden');
+
+      state.audioElement.onended = () => {
+        playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+      };
+    }
+
+    function toggleGlobalAudio() {
+      const playBtn = document.getElementById('playerPlayBtn');
+      if (state.audioElement.paused) {
+        state.audioElement.play();
+        playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+      } else {
+        state.audioElement.pause();
+        playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+      }
+    }
+
+
+    function renderCharts() {
+      const currentData = state.mode === 'demo' ? MOCK_DATA[state.timeRange] : (state.data[state.timeRange] || MOCK_DATA[state.timeRange]);
+      const stats = currentData.radarStats;
+
+      // Destroy old chart instances
+      if (radarChartInstance) radarChartInstance.destroy();
+      if (tempoChartInstance) tempoChartInstance.destroy();
+
+      // 1. Radar Chart
+      const ctxRadar = document.getElementById('radarChart').getContext('2d');
+      radarChartInstance = new Chart(ctxRadar, {
+        type: 'radar',
+        data: {
+          labels: ['Énergie', 'Positivité (Valence)', 'Dancabilité', 'Acoustique', 'Lyrical (Speech)', 'En Direct (Live)'],
+          datasets: [{
+            label: 'Profil Audio',
+            data: [stats.energy, stats.valence, stats.danceability, stats.acousticness, stats.speechiness, stats.liveness],
+            backgroundColor: 'rgba(29, 185, 84, 0.25)',
+            borderColor: '#1DB954',
+            borderWidth: 2,
+            pointBackgroundColor: '#1DB954',
+            pointBorderColor: '#fff',
+            pointHoverBackgroundColor: '#fff',
+            pointHoverBorderColor: '#1DB954'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            r: {
+              angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
+              grid: { color: 'rgba(255, 255, 255, 0.1)' },
+              pointLabels: { color: '#b3b3b3', font: { size: 11, family: 'Plus Jakarta Sans' } },
+              ticks: { display: false, backdropColor: 'transparent' },
+              suggestedMin: 0,
+              suggestedMax: 100
+            }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
+
+      // 2. Tempo Chart
+      const ctxTempo = document.getElementById('tempoChart').getContext('2d');
+      tempoChartInstance = new Chart(ctxTempo, {
+        type: 'bar',
+        data: {
+          labels: ['80-100 BPM', '100-120 BPM', '120-140 BPM', '140-160 BPM', '160+ BPM'],
+          datasets: [{
+            data: currentData.tempoDistribution,
+            backgroundColor: ['#1ed760', '#1DB954', '#1aa34a', '#14803a', '#0e5c29'],
+            borderRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { grid: { display: false }, ticks: { color: '#b3b3b3' } },
+            y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#b3b3b3' } }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+
+    function setPosterTheme(theme) {
+      state.posterTheme = theme;
+      document.querySelectorAll('.theme-btn').forEach(btn => {
+        btn.classList.remove('border-spotify-green', 'bg-spotify-green/10', 'text-white');
+        btn.classList.add('border-white/10', 'bg-[#181818]', 'text-spotify-subtext');
+      });
+      const active = document.getElementById(`theme-${theme}`);
+      if (active) {
+        active.classList.remove('border-white/10', 'bg-[#181818]', 'text-spotify-subtext');
+        active.classList.add('border-spotify-green', 'bg-spotify-green/10', 'text-white');
+      }
+      renderFestivalPoster();
+    }
+
+    function renderFestivalPoster() {
+      const canvas = document.getElementById('posterCanvas');
+      const ctx = canvas.getContext('2d');
+      const currentData = state.mode === 'demo' ? MOCK_DATA[state.timeRange] : (state.data[state.timeRange] || MOCK_DATA[state.timeRange]);
+      const artists = currentData.artists.map(a => a.name);
+
+      const festivalName = document.getElementById('posterNameInput').value || "SUPERSONIC FESTIVAL 2026";
+      const festivalDate = document.getElementById('posterDateInput').value || "24 - 26 JUILLET 2026";
+
+      // Dimensions
+      const W = canvas.width;
+      const H = canvas.height;
+
+      // Theme Colors Definition
+      let bgGradient, titleColor, dayHeaderColor, headlineColor, subColor, accentColor;
+
+      if (state.posterTheme === 'cyberpunk') {
+        bgGradient = ctx.createLinearGradient(0, 0, W, H);
+        bgGradient.addColorStop(0, '#0f051d');
+        bgGradient.addColorStop(0.5, '#290a59');
+        bgGradient.addColorStop(1, '#05010a');
+        titleColor = '#00F0FF';
+        dayHeaderColor = '#FF007A';
+        headlineColor = '#FFFFFF';
+        subColor = '#E0E0E0';
+        accentColor = '#FF007A';
+      } else if (state.posterTheme === 'retro') {
+        bgGradient = ctx.createLinearGradient(0, 0, W, H);
+        bgGradient.addColorStop(0, '#2d0612');
+        bgGradient.addColorStop(0.5, '#5c1328');
+        bgGradient.addColorStop(1, '#120207');
+        titleColor = '#FFB703';
+        dayHeaderColor = '#FB8500';
+        headlineColor = '#FFFFFF';
+        subColor = '#FFD166';
+        accentColor = '#FFB703';
+      } else if (state.posterTheme === 'minimal') {
+        bgGradient = ctx.createLinearGradient(0, 0, W, H);
+        bgGradient.addColorStop(0, '#0d0d0d');
+        bgGradient.addColorStop(1, '#181818');
+        titleColor = '#1DB954';
+        dayHeaderColor = '#FFFFFF';
+        headlineColor = '#FFFFFF';
+        subColor = '#B3B3B3';
+        accentColor = '#1DB954';
+      } else if (state.posterTheme === 'golden') {
+        bgGradient = ctx.createLinearGradient(0, 0, W, H);
+        bgGradient.addColorStop(0, '#3a2305');
+        bgGradient.addColorStop(0.5, '#6a430c');
+        bgGradient.addColorStop(1, '#1a0e01');
+        titleColor = '#FFD700';
+        dayHeaderColor = '#F4A261';
+        headlineColor = '#FFFFFF';
+        subColor = '#E9C46A';
+        accentColor = '#FFD700';
+      }
+
+      // Draw Background
+      ctx.fillStyle = bgGradient;
+      ctx.fillRect(0, 0, W, H);
+
+      // Decorative Grid or Sun for Retro
+      if (state.posterTheme === 'retro') {
+        ctx.fillStyle = 'rgba(251, 133, 0, 0.15)';
+        ctx.beginPath();
+        ctx.arc(W / 2, 280, 180, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Border Lines
+      ctx.strokeStyle = accentColor;
+      ctx.lineWidth = 4;
+      ctx.strokeRect(20, 20, W - 40, H - 40);
+
+      // Header: Festival Name
+      ctx.textAlign = "center";
+      ctx.font = "bold 64px 'Bebas Neue', sans-serif";
+      ctx.fillStyle = titleColor;
+      ctx.shadowColor = accentColor;
+      ctx.shadowBlur = 15;
+      ctx.fillText(festivalName.toUpperCase(), W / 2, 100);
+      ctx.shadowBlur = 0;
+
+      // Subhead: Date & Place
+      ctx.font = "bold 20px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillStyle = subColor;
+      ctx.fillText(festivalDate.toUpperCase(), W / 2, 135);
+
+      // Separator Line
+      ctx.beginPath();
+      ctx.moveTo(100, 160);
+      ctx.lineTo(W - 100, 160);
+      ctx.strokeStyle = accentColor;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Lineup Days Splitting
+      const days = [
+        { label: "VENDREDI / DAY 1", headliner: artists[0] || "JUSTICE", sub: artists.slice(1, 4) },
+        { label: "SAMEDI / DAY 2", headliner: artists[4] || "THE XX", sub: artists.slice(5, 8) },
+        { label: "DIMANCHE / DAY 3", headliner: artists[8] || "DAFT PUNK", sub: artists.slice(9, 12) }
+      ];
+
+      let startY = 220;
+
+      days.forEach(d => {
+        // Day Header
+        ctx.font = "bold 22px 'Bebas Neue', sans-serif";
+        ctx.fillStyle = dayHeaderColor;
+        ctx.fillText(`— ${d.label} —`, W / 2, startY);
+
+        // Headliner
+        ctx.font = "black 48px 'Bebas Neue', sans-serif";
+        ctx.fillStyle = headlineColor;
+        ctx.fillText((d.headliner || "HEADLINER").toUpperCase(), W / 2, startY + 50);
+
+        // Sub-headliners
+        const subNames = d.sub.length > 0 ? d.sub.join(" • ") : "SUPPORT ACTS";
+        ctx.font = "bold 20px 'Plus Jakarta Sans', sans-serif";
+        ctx.fillStyle = subColor;
+        ctx.fillText(subNames.toUpperCase(), W / 2, startY + 90);
+
+        startY += 260;
+      });
+
+      // Footer Watermark
+      ctx.font = "14px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+      ctx.fillText("GÉNÉRÉ PAR MON BILAN MUSICAL • SPOTIFY INSIGHTS", W / 2, H - 40);
+    }
+
+    function downloadPoster() {
+      const canvas = document.getElementById('posterCanvas');
+      const image = canvas.toDataURL("image/png");
+      const link = document.createElement('a');
+      link.download = "mon-festival-lineup-2026.png";
+      link.href = image;
+      link.click();
+    }
+
+
+    function toggleAuthModal() {
+      const modal = document.getElementById('authModal');
+      modal.classList.toggle('hidden');
+    }
+
+    function copyRedirectUri() {
+      const box = document.getElementById('redirectUriBox');
+      box.select();
+      document.execCommand('copy');
+      alert("Redirect URI copiée dans votre presse-papier !");
+    }
+
+    function switchToDemoMode() {
+      state.mode = 'demo';
+      document.getElementById('statusIndicator').className = "inline-block w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse";
+      document.getElementById('statusText').innerText = "Mode Démo actif (Données simulées riches)";
+      document.getElementById('authBtnLabel').innerText = "Connecter mon Spotify";
+      toggleAuthModal();
+      refreshUI();
+    }
+
+    // Spotify PKCE Helper functions
+    function generateRandomString(length) {
+      let text = '';
+      const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      for (let i = 0; i < length; i++) {
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+      }
+      return text;
+    }
+
+    async function generateCodeChallenge(codeVerifier) {
+      const data = new TextEncoder().encode(codeVerifier);
+      const digest = await window.crypto.subtle.digest('SHA-256', data);
+      return btoa(String.fromCharCode.apply(null, new Uint8Array(digest)))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+    }
+
+    async function startSpotifyLogin() {
+      const clientId = document.getElementById('spotifyClientIdInput').value.trim();
+      if (!clientId) {
+        alert("Veuillez saisir votre Client ID Spotify.");
+        return;
+      }
+
+      localStorage.setItem('spotify_client_id', clientId);
+      const redirectUri = window.location.origin + window.location.pathname;
+      const verifier = generateRandomString(128);
+      sessionStorage.setItem('spotify_code_verifier', verifier);
+
+      const challenge = await generateCodeChallenge(verifier);
+      const scope = "user-top-read user-read-recently-played";
+
+      const authUrl = `https://accounts.spotify.com/authorize?` +
+        `client_id=${encodeURIComponent(clientId)}` +
+        `&response_type=code` +
+        `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+        `&code_challenge_method=S256` +
+        `&code_challenge=${encodeURIComponent(challenge)}` +
+        `&scope=${encodeURIComponent(scope)}`;
+
+      window.location.href = authUrl;
+    }
+
+    async function handleSpotifyCallback() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+
+      if (code) {
+        const clientId = localStorage.getItem('spotify_client_id');
+        const verifier = sessionStorage.getItem('spotify_code_verifier');
+        const redirectUri = window.location.origin + window.location.pathname;
+
+        if (!clientId || !verifier) return;
+
+        try {
+          const response = await fetch('https://accounts.spotify.com/api/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              client_id: clientId,
+              grant_type: 'authorization_code',
+              code: code,
+              redirect_uri: redirectUri,
+              code_verifier: verifier
+            })
+          });
+
+          const data = await response.json();
+          if (data.access_token) {
+            state.spotifyToken = data.access_token;
+            state.mode = 'spotify';
+            
+            // Clean URL query params
+            window.history.replaceState({}, document.title, window.location.pathname);
+
+            document.getElementById('statusIndicator').className = "inline-block w-2.5 h-2.5 rounded-full bg-spotify-green shadow-glow";
+            document.getElementById('statusText').innerText = "Connecté à votre compte Spotify en direct";
+            document.getElementById('authBtnLabel').innerText = "Compte Spotify Connecté";
+
+            await fetchSpotifyData();
+          }
+        } catch (err) {
+          console.error("Erreur de connexion Spotify :", err);
+        }
+      }
+    }
+
+    async function fetchSpotifyData() {
+      if (!state.spotifyToken) return;
+
+      try {
+        const headers = { Authorization: `Bearer ${state.spotifyToken}` };
+        
+        // Fetch top artists & top tracks
+        const [resArtists, resTracks] = await Promise.all([
+          fetch(`https://api.spotify.com/v1/me/top/artists?time_range=${state.timeRange}&limit=20`, { headers }),
+          fetch(`https://api.spotify.com/v1/me/top/tracks?time_range=${state.timeRange}&limit=20`, { headers })
+        ]);
+
+        const dataArtists = await resArtists.json();
+        const dataTracks = await resTracks.json();
+
+        if (dataArtists.items && dataTracks.items) {
+          // Process Spotify Live Data
+          const parsedArtists = dataArtists.items.map((a, idx) => ({
+            name: a.name,
+            genres: a.genres,
+            popularity: a.popularity,
+            image: a.images[0]?.url || 'https://placehold.co/400x400/181818/1DB954?text=Artist',
+            rankChange: `#${idx + 1}`
+          }));
+
+          const parsedTracks = dataTracks.items.map(t => ({
+            id: t.id,
+            title: t.name,
+            artist: t.artists.map(a => a.name).join(', '),
+            album: t.album.name,
+            duration: `${Math.floor(t.duration_ms / 60000)}:${Math.floor((t.duration_ms % 60000) / 1000).toString().padStart(2, '0')}`,
+            bpm: 120, // Default estimate if audio-features restricted
+            cover: t.album.images[0]?.url || 'https://placehold.co/200x200/181818/1DB954?text=Cover',
+            previewUrl: t.preview_url
+          }));
+
+          // Calculate average underground score
+          const avgPop = parsedArtists.reduce((acc, curr) => acc + curr.popularity, 0) / (parsedArtists.length || 1);
+          const undergroundScore = Math.round(100 - avgPop);
+
+          // Top genres extraction
+          const allGenres = parsedArtists.flatMap(a => a.genres);
+          const genreCounts = {};
+          allGenres.forEach(g => genreCounts[g] = (genreCounts[g] || 0) + 1);
+          const topGenres = Object.keys(genreCounts).sort((a, b) => genreCounts[b] - genreCounts[a]).slice(0, 5);
+
+          state.data[state.timeRange] = {
+            archetype: `Profil Spotify Direct (${state.timeRange})`,
+            archetypeDesc: `Basé sur vos ${parsedArtists.length} artistes et ${parsedTracks.length} titres les plus écoutés en direct depuis l'API Spotify.`,
+            undergroundScore: undergroundScore,
+            genres: topGenres.length > 0 ? topGenres : ["Pop", "Indie", "Hip-Hop"],
+            radarStats: { energy: 75, valence: 60, danceability: 70, acousticness: 30, speechiness: 20, liveness: 25 },
+            tempoDistribution: [15, 30, 35, 15, 5],
+            palette: parsedTracks.slice(0, 6).map((t, idx) => ({
+              hex: ['#1DB954', '#7B2CBF', '#FF007A', '#00F0FF', '#FF9E00', '#121212'][idx % 6],
+              label: t.title,
+              album: t.album
+            })),
+            artists: parsedArtists,
+            tracks: parsedTracks
+          };
+
+          refreshUI();
+        }
+      } catch (err) {
+        console.error("Erreur lors de la récupération des données Spotify :", err);
+      }
+    }
+
+    // Filter artists in grid
+    function filterArtists() {
+      const q = document.getElementById('artistSearch').value.toLowerCase();
+      const currentData = state.mode === 'demo' ? MOCK_DATA[state.timeRange] : (state.data[state.timeRange] || MOCK_DATA[state.timeRange]);
+      const filtered = currentData.artists.filter(a => 
+        a.name.toLowerCase().includes(q) || a.genres.some(g => g.toLowerCase().includes(q))
+      );
+      renderFullArtistsGrid(filtered);
+    }
+  </script>
+</body>
+</html>
